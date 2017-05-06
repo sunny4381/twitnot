@@ -1,0 +1,22 @@
+[package]
+name = "twitnot"
+version = "0.1.0"
+authors = ["NAKANO Hideo <pinarello.marvel@gmail.com>"]
+
+[dependencies]
+base64 = "*"
+chrono = "*"
+docopt = "*"
+dotenv = "*"
+encoding = "*"
+env_logger = "*"
+hyper = "*"
+hyper-native-tls = "*"
+lettre = "*"
+mime = "*"
+native-tls = "*"
+rust-sqlite = "*"
+rustc-serialize = "*"
+serde_json = "*"
+time = "*"
+url = "*"
