@@ -1,9 +1,11 @@
 use std::str;
 
+use base64;
+
 use chrono::{DateTime, UTC};
 
-use encoding::{Encoding, EncoderTrap, DecoderTrap};
-use encoding::all::ISO_2022_JP;
+// use encoding::{Encoding, EncoderTrap, DecoderTrap};
+// use encoding::all::ISO_2022_JP;
 
 use lettre::email::EmailBuilder;
 use lettre::transport::EmailTransport;
@@ -16,13 +18,32 @@ use error::Error;
 use config::Config;
 use twitter::TwitterClient;
 
+fn encode_subject(subject: &str) -> String {
+    let mut slices = subject.as_bytes().chunks(3 * 14 + 1);
+    let mut ret = String::new();
+    loop {
+        match slices.next() {
+            None => break,
+            Some(ref slice) => {
+                let b64 = base64::encode(slice);
+                if ret.len() > 0 {
+                    ret.push_str("\r\n ");
+                }
+                ret.push_str(&format!("=?UTF-8?B?{}?=", b64));
+            },
+        }
+    }
+    
+    ret
+}
+
 fn send_notification_mail(config: &Config, user: &User, tweet: &Tweet) -> Result<(), Error> {
     let url = format!("http://twitter.com/{}/status/{}", user.screen_name, tweet.id);
-    let subject = ISO_2022_JP.encode(&format!("【更新通知】{}", tweet.user_name), EncoderTrap::Strict).unwrap();    
+    let subject = &format!("【更新通知】{}", tweet.user_name);
     let text = format!("{}\n\nURL: {}", tweet.text, url);
     let mut email_builder = EmailBuilder::new()
         .from(config.notification_from_email.as_str())
-        .subject(str::from_utf8(&subject).unwrap())
+        .subject(&encode_subject(subject))
         .text(&text);
     for to in &config.notification_tos {
         email_builder = email_builder.to(to.as_str());
@@ -92,10 +113,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_2022_jp() {
-        let encoded: Vec<u8> = ISO_2022_JP.encode("Hello, 世界!", EncoderTrap::Strict).unwrap();
-        println!("str={}", str::from_utf8(&encoded).unwrap());
-        assert_eq!(ISO_2022_JP.decode(&encoded, DecoderTrap::Strict).unwrap(), "Hello, 世界!");
+    fn test_encode_subject1() {
+        assert_eq!(encode_subject("日本語テスト"), "=?UTF-8?B?5pel5pys6Kqe44OG44K544OI?=");
+    }
+
+    #[test]
+    fn test_encode_subject2() {
+        assert_eq!(encode_subject("徳島ヴォルティス 公式の更新通知"), "=?UTF-8?B?5b6z5bO244O044Kp44Or44OG44Kj44K5IOWFrOW8j+OBruabtOaWsOmAmg==?=\r\n =?UTF-8?B?55+l?=");
     }
 
     #[test]

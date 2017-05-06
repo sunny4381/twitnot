@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["NAKANO Hideo <pinarello.marvel@gmail.com>"]
 
 [dependencies]
-base64 = "*"
+base64 = "~0.5"
 chrono = "*"
 docopt = "*"
 dotenv = "*"
