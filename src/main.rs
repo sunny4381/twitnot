@@ -38,6 +38,7 @@ Usage:
   twitnot init <consumer-key> [--secret=<consumer-secret>] [--db=<database-file>] [--gmail-username=<gmail-username>] [--gmail-password=<gmail-password>]
   twitnot add <screen-name>
   twitnot list [<screen-name>] [--max=<max-count>]
+  twitnot remove <screen-name>
   twitnot check-updates [--screen-name=<screen-name>]
   twitnot (-h | --help)
 Options:
@@ -61,6 +62,7 @@ pub struct Args {
     cmd_init: bool,
     cmd_list: bool,
     cmd_add: bool,
+    cmd_remove: bool,
     cmd_check_updates: bool,
 }
 

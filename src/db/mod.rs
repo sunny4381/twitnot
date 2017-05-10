@@ -15,9 +15,9 @@ pub struct Db {
     conn: DatabaseConnection,
 }
 
-// fn mk_err1(desc: &'static str) -> Error {
-//     mk_err2(SqliteErrorCode::SQLITE_ERROR, desc)
-// }
+fn mk_err1(desc: &'static str) -> Error {
+    mk_err2(SqliteErrorCode::SQLITE_ERROR, desc)
+}
 
 fn mk_err2(kind: SqliteErrorCode, desc: &'static str) -> Error {
     Error::from(SqliteError {
@@ -46,6 +46,30 @@ impl Db {
         try!(conn.exec(query::CREATE_INDEX_USER_ID_ON_TWEETS));
         try!(conn.exec(query::CREATE_INDEX_CREATED_AT_ON_TWEETS));
         Ok(Db { conn: conn })
+    }
+
+    pub fn begin_transaction(&self) -> Result<(), Error> {
+        let mut stmt = try!(self.conn.prepare(query::BEGIN_TRANSACTION));
+        let mut results = stmt.execute();
+        loop {
+            match try!(results.step()) {
+                None => break,
+                Some(ref row) => (),
+            }
+        }
+        Ok(())
+    }
+
+    pub fn commit(&self) -> Result<(), Error> {
+        let mut stmt = try!(self.conn.prepare(query::COMMIT_TRANSACTION));
+        let mut results = stmt.execute();
+        loop {
+            match try!(results.step()) {
+                None => break,
+                Some(ref row) => (),
+            }
+        }
+        Ok(())
     }
 
     pub fn get_all_users(&self) -> Result<Vec<models::User>, Error> {
@@ -110,6 +134,17 @@ impl Db {
         let row_id = self.conn.last_insert_rowid();
         let opt_user = try!(self.get_user_by_row_id(row_id));
         opt_user.ok_or_else(|| mk_err2(SqliteErrorCode::SQLITE_NOTFOUND, "insert error"))
+    }
+
+    pub fn delete_user(&self, id: i32) -> Result<(), Error> {
+        let mut stmt = try!(self.conn.prepare(query::DELETE_USER));
+        try!(stmt.bind_int(1, id));
+        let changes = try!(stmt.update(&[]));
+        if changes == 0 {
+            return Err(mk_err1("delete error"));
+        }
+
+        Ok(())
     }
 
     pub fn get_tweets_by_user_id(&self, user_id: i32, limit: i32) -> Result<Vec<models::Tweet>, Error> {
@@ -181,5 +216,16 @@ impl Db {
         let row_id = self.conn.last_insert_rowid();
         let opt_tweet = try!(self.get_tweet_by_row_id(row_id));
         opt_tweet.ok_or_else(|| mk_err2(SqliteErrorCode::SQLITE_NOTFOUND, "insert error"))
+    }
+
+    pub fn delete_tweets_by_user_id(&self, user_id: i32) -> Result<(), Error> {
+        let mut stmt = try!(self.conn.prepare(query::DELETE_TWEETS_BY_USER_ID));
+        try!(stmt.bind_int(1, user_id));
+        let changes = try!(stmt.update(&[]));
+        if changes == 0 {
+            return Err(mk_err1("delete error"));
+        }
+
+        Ok(())
     }
 }

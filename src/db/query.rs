@@ -2,6 +2,14 @@ pub const ENABLE_FOREIGN_KEY: &'static str = r#"
 PRAGMA foreign_keys = ON;
 "#;
 
+pub const BEGIN_TRANSACTION: &'static str = r#"
+BEGIN TRANSACTION;
+"#;
+
+pub const COMMIT_TRANSACTION: &'static str = r#"
+COMMIT TRANSACTION;
+"#;
+
 pub const CREATE_USERS_TABLE: &'static str = r#"
 CREATE TABLE IF NOT EXISTS users (
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,6 +58,10 @@ pub const INSERT_USER: &'static str = r#"
 INSERT INTO users(screen_name, created_at) VALUES ($1, $2)
 "#;
 
+pub const DELETE_USER: &'static str = r#"
+DELETE FROM users WHERE ID=$1
+"#;
+
 pub const GET_TWEETS_BY_USER_ID: &'static str = r#"
 SELECT * FROM tweets WHERE user_id=$1 ORDER BY created_at desc LIMIT $2
 "#;
@@ -64,4 +76,8 @@ SELECT * FROM tweets WHERE ROWID=$1
 
 pub const INSERT_TWEET: &'static str = r#"
 INSERT INTO tweets(id,user_id,user_name,created_at,text,retweets,raw_json) VALUES ($1,$2,$3,$4,$5,$6,$7)
+"#;
+
+pub const DELETE_TWEETS_BY_USER_ID: &'static str = r#"
+DELETE FROM tweets WHERE user_id=$1
 "#;
