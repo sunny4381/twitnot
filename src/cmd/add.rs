@@ -18,13 +18,13 @@ fn retrieve_user(db: &Db, screen_name: &str) -> Result<User, Error> {
     db.insert_user(screen_name)
 }
 
-pub fn execute_import(args: &Args) -> Result<(), Error> {
+pub fn execute_add(args: &Args) -> Result<(), Error> {
     let config = try!(Config::load("default"));
 
     let db = try!(Db::open(&config.database_file));
     let client = try!(TwitterClient::new());
 
-    let screen_name = args.flag_screen_name.clone().unwrap();
+    let screen_name = args.arg_screen_name.clone().unwrap();
     let user = try!(retrieve_user(&db, &screen_name));
 
     let access_token = try!(client.get_access_token(&config.consumer_key, &config.consumer_secret));

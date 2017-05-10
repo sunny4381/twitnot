@@ -1,10 +1,10 @@
-mod import;
+mod add;
 mod init;
 mod list;
 mod check_updates;
 
 use super::Args;
-use self::import::execute_import;
+use self::add::execute_add;
 use self::init::execute_init;
 use self::list::execute_list;
 use self::check_updates::execute_check_updates;
@@ -15,8 +15,8 @@ pub fn execute(args: &Args) -> Result<(), Error> {
         return execute_init(args);
     } else if args.cmd_list {
         return execute_list(args);
-    } else if args.cmd_import {
-        return execute_import(args);
+    } else if args.cmd_add {
+        return execute_add(args);
     } else if args.cmd_check_updates {
         return execute_check_updates(args);
     }

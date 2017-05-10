@@ -36,7 +36,7 @@ Tweet Monitor & Notification.
 
 Usage:
   twitnot init <consumer-key> [--secret=<consumer-secret>] [--db=<database-file>] [--gmail-username=<gmail-username>] [--gmail-password=<gmail-password>]
-  twitnot import --screen-name=<screen-name>
+  twitnot add <screen-name>
   twitnot list [<screen-name>] [--max=<max-count>]
   twitnot check-updates [--screen-name=<screen-name>]
   twitnot (-h | --help)
@@ -60,7 +60,7 @@ pub struct Args {
     arg_screen_name: Option<String>,
     cmd_init: bool,
     cmd_list: bool,
-    cmd_import: bool,
+    cmd_add: bool,
     cmd_check_updates: bool,
 }
 
