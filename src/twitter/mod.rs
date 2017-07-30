@@ -25,6 +25,7 @@ pub struct Tweet {
     pub user_name: String,
     pub text: String,
     pub retweets: bool,
+    pub retweeted_status_id: u64,
     pub raw_json: String,
 }
 
@@ -88,6 +89,7 @@ impl TwitterClient {
                     let user_name = entry["user"]["name"].as_str().unwrap_or("");
                     let text = entry["text"].as_str().unwrap_or("");
                     let retweets = entry["retweeted_status"].is_null();
+                    let retweeted_status_id = entry["retweeted_status"]["id"].as_u64().unwrap_or(0);
 
                     results.push(Tweet {
                         id: id,
@@ -95,6 +97,7 @@ impl TwitterClient {
                         user_name: String::from(user_name),
                         text: String::from(text),
                         retweets: retweets,
+                        retweeted_status_id: retweeted_status_id,
                         raw_json: entry.to_string(),
                     });
                 }
