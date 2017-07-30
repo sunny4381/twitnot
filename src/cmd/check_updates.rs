@@ -65,6 +65,7 @@ fn check_updates(config: &Config, db: &Db, user: &User) -> Result<(), Error> {
     let tweets = try!(client.get_tweets(&access_token, &user.screen_name, None));
 
     let mut insert_count = 0;
+    let mut notify_count = 0;
     for tweet in tweets {
         let exists = {
             let tw = try!(db.get_tweet(tweet.id as i64));
@@ -82,11 +83,21 @@ fn check_updates(config: &Config, db: &Db, user: &User) -> Result<(), Error> {
             text: tweet.text,
             retweets: if tweet.retweets { 1 } else { 0 },
             raw_json: tweet.raw_json }));
-        try!(send_notification_mail(config, &user, &tw));
         insert_count += 1;
+
+        let exists2 = {
+            let tw = try!(db.get_tweet(tweet.retweeted_status_id as i64));
+            tw.is_some()
+        };
+        if exists2 {
+            continue;
+        }
+
+        try!(send_notification_mail(config, &user, &tw));
+        notify_count += 1;
     }
 
-    println!("{}: imported {} tweets and send {} mails", user.screen_name, insert_count, insert_count);
+    println!("{}: imported {} tweets and send {} mails", user.screen_name, insert_count, notify_count);
     Ok(())
 }
 
