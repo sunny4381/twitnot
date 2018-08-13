@@ -1,4 +1,4 @@
-use chrono::UTC;
+use chrono::Utc;
 
 use error::Error;
 
@@ -27,14 +27,6 @@ fn mk_err2(kind: SqliteErrorCode, desc: &'static str) -> Error {
     })
 }
 
-// fn mk_err3(kind: SqliteErrorCode, desc: &'static str, detail: Option<String>) -> Error {
-//     Error::from(SqliteError {
-//         kind: kind,
-//         desc: desc,
-//         detail: detail,
-//     })
-// }
-
 impl Db {
     pub fn open(database_file: &str) -> Result<Db, Error> {
         let access = access::ByFilename { flags: Default::default(), filename: database_file };
@@ -54,7 +46,7 @@ impl Db {
         loop {
             match try!(results.step()) {
                 None => break,
-                Some(ref row) => (),
+                Some(ref _row) => (),
             }
         }
         Ok(())
@@ -66,7 +58,7 @@ impl Db {
         loop {
             match try!(results.step()) {
                 None => break,
-                Some(ref row) => (),
+                Some(ref _row) => (),
             }
         }
         Ok(())
@@ -125,7 +117,7 @@ impl Db {
     pub fn insert_user(&self, screen_name: &str) -> Result<models::User, Error> {
         let mut stmt = try!(self.conn.prepare(query::INSERT_USER));
         try!(stmt.bind_text(1, screen_name));
-        try!(stmt.bind_text(2, &UTC::now().to_rfc3339()));
+        try!(stmt.bind_text(2, &Utc::now().to_rfc3339()));
         let changes = try!(stmt.update(&[]));
         if changes == 0 {
             return Err(mk_err2(SqliteErrorCode::SQLITE_NOTFOUND, "insert error"));

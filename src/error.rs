@@ -4,9 +4,9 @@ use std::io::{self, Read};
 use std::fmt;
 
 use chrono;
-use hyper;
 use lettre;
-use native_tls;
+use lettre_email;
+use reqwest;
 use serde_json;
 use sqlite3;
 
@@ -14,15 +14,14 @@ use sqlite3;
 pub enum Error {
     EnvError(env::VarError),
     IoError(io::Error),
-    HyperError(hyper::error::Error),
-    HttpError(hyper::status::StatusCode, String),
+    ReqwestError(reqwest::Error),
+    HttpError(reqwest::StatusCode, String),
     SerdeError(serde_json::error::Error),
-    NativeTlsError(native_tls::Error),
     ConfigError(&'static str),
     SqliteError(sqlite3::SqliteError),
     ChronoParseError(chrono::ParseError),
-    LettreEmailError(lettre::email::error::Error),
-    LettreSmtpError(lettre::transport::smtp::error::Error),
+    LettreEmailError(lettre_email::error::Error),
+    LettreSmtpError(lettre::smtp::error::Error),
     UnknownCommandError,
 }
 
@@ -31,10 +30,11 @@ impl fmt::Display for Error {
         match *self {
             Error::EnvError(ref err) => write!(f, "IO error: {}", err),
             Error::IoError(ref err) => write!(f, "IO error: {}", err),
-            Error::HyperError(ref err) => write!(f, "Hyper error: {}", err),
+            // Error::HyperError(ref err) => write!(f, "Hyper error: {}", err),
+            Error::ReqwestError(ref err) => write!(f, "Reqwest error: {}", err),
             Error::HttpError(ref status, ref msg) => write!(f, "HTTP error: {}\n{}", status, msg),
             Error::SerdeError(ref err) => write!(f, "Serde error: {}", err),
-            Error::NativeTlsError(ref err) => write!(f, "NativeTls error: {}", err),
+            // Error::NativeTlsError(ref err) => write!(f, "NativeTls error: {}", err),
             Error::ConfigError(msg) => write!(f, "Config error: {}", msg),
             Error::SqliteError(ref err) => write!(f, "Sqlite error: {}", err),
             Error::ChronoParseError(ref err) => write!(f, "Chrono Parse error: {}", err),
@@ -52,10 +52,11 @@ impl error::Error for Error {
         match *self {
             Error::EnvError(ref err) => err.description(),
             Error::IoError(ref err) => err.description(),
-            Error::HyperError(ref err) => err.description(),
+            // Error::HyperError(ref err) => err.description(),
+            Error::ReqwestError(ref err) => err.description(),
             Error::HttpError(ref status, ref _msg) => status.canonical_reason().unwrap(),
             Error::SerdeError(ref err) => err.description(),
-            Error::NativeTlsError(ref err) => err.description(),
+            // Error::NativeTlsError(ref err) => err.description(),
             Error::ConfigError(msg) => msg,
             Error::SqliteError(ref err) => err.description(),
             Error::ChronoParseError(ref err) => err.description(),
@@ -73,10 +74,11 @@ impl error::Error for Error {
             // 実装しているので、問題なく動きます。
             Error::EnvError(ref err) => Some(err),
             Error::IoError(ref err) => Some(err),
-            Error::HyperError(ref err) => Some(err),
+            // Error::HyperError(ref err) => Some(err),
+            Error::ReqwestError(ref err) => Some(err),
             Error::HttpError(_, _) => None,
             Error::SerdeError(ref err) => Some(err),
-            Error::NativeTlsError(ref err) => Some(err),
+            // Error::NativeTlsError(ref err) => Some(err),
             Error::ConfigError(_) => None,
             Error::SqliteError(ref err) => Some(err),
             Error::ChronoParseError(ref err) => Some(err),
@@ -99,23 +101,18 @@ impl From<io::Error> for Error {
     }
 }
 
-impl From<hyper::error::Error> for Error {
-    fn from(err: hyper::error::Error) -> Error {
-        Error::HyperError(err)
+impl From<reqwest::Error> for Error {
+    fn from(err: reqwest::Error) -> Error {
+        Error::ReqwestError(err)
     }
 }
 
-// impl From<hyper::status::StatusCode> for Error {
-//     fn from(status: hyper::status::StatusCode) -> Error {
-//         Error::HttpError(status, String::from(""))
-//     }
-// }
-impl From<hyper::client::Response> for Error {
-    fn from(mut res: hyper::client::Response) -> Error {
+impl From<reqwest::Response> for Error {
+    fn from(mut res: reqwest::Response) -> Error {
         let mut body = String::new();
         let result = res.read_to_string(&mut body);
         if result.is_ok() {
-            Error::HttpError(res.status, body)
+            Error::HttpError(res.status(), body)
         } else {
             Error::from(result.unwrap_err())
         }
@@ -125,12 +122,6 @@ impl From<hyper::client::Response> for Error {
 impl From<serde_json::error::Error> for Error {
     fn from(err: serde_json::error::Error) -> Error {
         Error::SerdeError(err)
-    }
-}
-
-impl From<native_tls::Error> for Error {
-    fn from(err: native_tls::Error) -> Error {
-        Error::NativeTlsError(err)
     }
 }
 
@@ -146,14 +137,14 @@ impl From<chrono::ParseError> for Error {
     }
 }
 
-impl From<lettre::email::error::Error> for Error {
-    fn from(err: lettre::email::error::Error) -> Error {
+impl From<lettre_email::error::Error> for Error {
+    fn from(err: lettre_email::error::Error) -> Error {
         Error::LettreEmailError(err)
     }
 }
 
-impl From<lettre::transport::smtp::error::Error> for Error {
-    fn from(err: lettre::transport::smtp::error::Error) -> Error {
+impl From<lettre::smtp::error::Error> for Error {
+    fn from(err: lettre::smtp::error::Error) -> Error {
         Error::LettreSmtpError(err)
     }
 }

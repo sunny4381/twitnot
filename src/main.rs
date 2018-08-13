@@ -4,18 +4,17 @@ extern crate docopt;
 extern crate dotenv;
 extern crate encoding;
 extern crate env_logger;
-// #[macro_use]
-extern crate hyper;
-extern crate hyper_native_tls;
 extern crate lettre;
+extern crate lettre_email;
 extern crate mime;
-extern crate native_tls;
+extern crate reqwest;
 extern crate rustc_serialize;
+#[macro_use]
+extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 extern crate sqlite3;
 extern crate time;
-extern crate url;
 
 mod cmd;
 mod config;
@@ -49,7 +48,7 @@ Options:
   --max=<max-count> Specify max count of tweet [default is 10].
 "#;
 
-#[derive(Debug, RustcDecodable)]
+#[derive(Debug, Deserialize)]
 pub struct Args {
     flag_secret: Option<String>,
     flag_gmail_username: Option<String>,
@@ -67,14 +66,13 @@ pub struct Args {
 }
 
 fn main() {
-    env_logger::init().unwrap();
+    env_logger::init();
     dotenv().ok();
 
     let args: Args = Docopt::new(USAGE)
-        .and_then(|d| d.decode())
+        .and_then(|d| d.deserialize())
         .unwrap_or_else(|e| e.exit());
 
-    // println!("args={:?}", args);
     match execute(&args) {
         Ok(_) => (),
         Err(ref e) => abort(e),

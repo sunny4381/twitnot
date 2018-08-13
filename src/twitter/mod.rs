@@ -2,20 +2,19 @@ use std::io::Read;
 use std::vec::Vec;
 
 use base64;
-use hyper::Client;
-use hyper::header::{ContentType, UserAgent, Authorization};
-use hyper::net::HttpsConnector;
-use hyper_native_tls::NativeTlsClient;
+use reqwest;
+use reqwest::header::Authorization;
+use reqwest::header::UserAgent;
 use serde_json;
-use url::form_urlencoded;
 
 use error::Error;
 
 pub const USER_AGENT: &'static str = "twitnot/0.1";
+pub const TOKEN_URL: &'static str = "https://api.twitter.com/oauth2/token";
 
 #[derive(Debug)]
 pub struct TwitterClient {
-    pub client: Client,
+    pub client: reqwest::Client,
 }
 
 #[derive(Debug)]
@@ -31,28 +30,20 @@ pub struct Tweet {
 
 impl TwitterClient {
     pub fn new() -> Result<TwitterClient, Error> {
-        let ssl = try!(NativeTlsClient::new().map_err(Error::NativeTlsError));
-
         Ok(TwitterClient {
-            client: Client::with_connector(HttpsConnector::new(ssl)),
+            client: reqwest::Client::new(),
         })
     }
 
     pub fn get_access_token(&self, consumer_key: &str, consumer_secret: &str) -> Result<String, Error> {
-        let token_body: String = form_urlencoded::Serializer::new(String::new())
-            .append_pair("grant_type", "client_credentials")
-            .finish();
-
         let authorization = base64::encode(format!("{}:{}", consumer_key, consumer_secret).as_bytes());
 
-        let req = self.client.post("https://api.twitter.com/oauth2/token")
-            .body(&token_body)
-            .header(ContentType("application/x-www-form-urlencoded".parse().unwrap()))
+        let mut builder = self.client.post(TOKEN_URL);
+        let req = builder.form(&[ ("grant_type", "client_credentials") ])
             .header(Authorization(format!("Basic {}", authorization)))
-            .header(UserAgent(USER_AGENT.to_owned()));
-    
+            .header(UserAgent::new(USER_AGENT));
         let res = try!(req.send());
-        if !res.status.is_success() {
+        if !res.status().is_success() {
             return Err(Error::from(res))
         }
 
@@ -62,17 +53,16 @@ impl TwitterClient {
     }
 
     pub fn get_tweets(&self, access_token: &str, screen_name: &str, count: Option<u32>) -> Result<Vec<Tweet>, Error> {
-        let mut params = form_urlencoded::Serializer::new(String::new());
-        params.append_pair("screen_name", screen_name);
+        let mut builder = self.client.get("https://api.twitter.com/1.1/statuses/user_timeline.json");
+        builder.query(&[("screen_name", screen_name)]);
         if let Some(c) = count {
-            params.append_pair("count", &format!("{}", c));
+            builder.query(&[("count", &format!("{}", c))]);
         }
-        let url = format!("https://api.twitter.com/1.1/statuses/user_timeline.json?{}", params.finish());
-        let req = self.client.get(&url)
-            .header(Authorization(format!("Bearer {}", access_token)))
-            .header(UserAgent(USER_AGENT.to_owned()));
+
+        let req = builder.header(Authorization(format!("Bearer {}", access_token)))
+            .header(UserAgent::new(USER_AGENT));
         let mut res = try!(req.send());
-        if !res.status.is_success() {
+        if !res.status().is_success() {
             return Err(Error::from(res))
         }
 

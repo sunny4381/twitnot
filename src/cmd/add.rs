@@ -1,4 +1,4 @@
-use chrono::{DateTime, UTC};
+use chrono::{DateTime, Utc};
 
 use super::Args;
 use db::Db;
@@ -44,7 +44,7 @@ pub fn execute_add(args: &Args) -> Result<(), Error> {
             id: tweet.id as i64,
             user_id: user.id,
             user_name: tweet.user_name,
-            created_at: try!(DateTime::parse_from_str(&tweet.created_at, "%a %b %e %T %z %Y")).with_timezone(&UTC),
+            created_at: try!(DateTime::parse_from_str(&tweet.created_at, "%a %b %e %T %z %Y")).with_timezone(&Utc),
             text: tweet.text,
             retweets: if tweet.retweets { 1 } else { 0 },
             raw_json: tweet.raw_json }));

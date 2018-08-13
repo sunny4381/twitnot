@@ -2,14 +2,12 @@ use std::str;
 
 use base64;
 
-use chrono::{DateTime, UTC};
+use chrono::{DateTime, Utc};
 
-// use encoding::{Encoding, EncoderTrap, DecoderTrap};
-// use encoding::all::ISO_2022_JP;
-
-use lettre::email::EmailBuilder;
-use lettre::transport::EmailTransport;
-use lettre::transport::smtp;
+use lettre_email::EmailBuilder;
+use lettre::EmailTransport;
+use lettre::SmtpTransport;
+use lettre::smtp::authentication::Credentials;
 
 use super::Args;
 use db::Db;
@@ -43,19 +41,20 @@ fn send_notification_mail(config: &Config, user: &User, tweet: &Tweet) -> Result
     let text = format!("{}\n\nURL: {}", tweet.text, url);
     let mut email_builder = EmailBuilder::new()
         .from(config.notification_from_email.as_str())
-        .subject(&encode_subject(subject))
-        .text(&text);
+        .subject(encode_subject(subject))
+        .text(text);
     for to in &config.notification_tos {
         email_builder = email_builder.to(to.as_str());
     }
     let email = try!(email_builder.build());
 
-    let transport_builder = try!(smtp::SmtpTransportBuilder::new(("smtp.gmail.com", 587)));
+    // let transport_builder = try!(SmtpTransportBuilder::new(("smtp.gmail.com", 587), ClientSecurity::Opportunistic));
+    let transport_builder = try!(SmtpTransport::simple_builder("smtp.gmail.com"));
     let mut transport = transport_builder
-        .credentials(&config.gmail_username, &config.gmail_password)
+        .credentials(Credentials::new(config.gmail_username.clone(), config.gmail_password.clone()))
         .smtp_utf8(false)
         .build();
-    try!(transport.send(email.clone()));
+    try!(transport.send(&email));
     Ok(())
 }
 
@@ -79,7 +78,7 @@ fn check_updates(config: &Config, db: &Db, user: &User) -> Result<(), Error> {
             id: tweet.id as i64,
             user_id: user.id,
             user_name: tweet.user_name,
-            created_at: try!(DateTime::parse_from_str(&tweet.created_at, "%a %b %e %T %z %Y")).with_timezone(&UTC),
+            created_at: try!(DateTime::parse_from_str(&tweet.created_at, "%a %b %e %T %z %Y")).with_timezone(&Utc),
             text: tweet.text,
             retweets: if tweet.retweets { 1 } else { 0 },
             raw_json: tweet.raw_json }));
@@ -139,13 +138,13 @@ mod tests {
         let user = User {
             id: 0,
             screen_name: String::from("vortis_pr"),
-            created_at: UTC::now(),
+            created_at: Utc::now(),
         };
         let tweet = Tweet {
             id: 0,
             user_id: 0,
             user_name: String::from("徳島ヴォルティス公式"),
-            created_at: UTC::now(),
+            created_at: Utc::now(),
             text: String::from("テスト"),
             retweets: 0,
             raw_json: String::from(""),
