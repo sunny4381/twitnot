@@ -8,7 +8,6 @@ extern crate lettre;
 extern crate lettre_email;
 extern crate mime;
 extern crate reqwest;
-extern crate rustc_serialize;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
