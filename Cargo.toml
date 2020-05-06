@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["NAKANO Hideo <pinarello.marvel@gmail.com>"]
 
 [dependencies]
-base64 = "~0.5"
+base64 = "*"
 chrono = "*"
 docopt = "*"
 dotenv = "*"
@@ -13,7 +13,7 @@ env_logger = "*"
 lettre = "*"
 lettre_email = "*"
 mime = "*"
-reqwest = "*"
+reqwest = { version = "*", features = ["blocking", "json"] }
 rust-sqlite = "*"
 serde = "*"
 serde_derive = "*"
