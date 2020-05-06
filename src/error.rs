@@ -1,6 +1,7 @@
 use std::env;
-use std::error;
-use std::io::{self, Read};
+// use std::error;
+use std::io;
+use std::io::Read;
 use std::fmt;
 
 use chrono;
@@ -45,49 +46,49 @@ impl fmt::Display for Error {
     }
 }
 
-impl error::Error for Error {
-    fn description(&self) -> &str {
-        // 下層のエラーは両方ともすでに `Error` を実装しているので、
-        // それらの実装に従います。
-        match *self {
-            Error::EnvError(ref err) => err.description(),
-            Error::IoError(ref err) => err.description(),
-            // Error::HyperError(ref err) => err.description(),
-            Error::ReqwestError(ref err) => err.description(),
-            Error::HttpError(ref status, ref _msg) => status.canonical_reason().unwrap(),
-            Error::SerdeError(ref err) => err.description(),
-            // Error::NativeTlsError(ref err) => err.description(),
-            Error::ConfigError(msg) => msg,
-            Error::SqliteError(ref err) => err.description(),
-            Error::ChronoParseError(ref err) => err.description(),
-            Error::LettreEmailError(ref err) => err.description(),
-            Error::LettreSmtpError(ref err) => err.description(),
-            Error::UnknownCommandError => "unknown command",
-        }
-    }
+// impl error::Error for Error {
+//     fn description(&self) -> &str {
+//         // 下層のエラーは両方ともすでに `Error` を実装しているので、
+//         // それらの実装に従います。
+//         match *self {
+//             Error::EnvError(ref err) => err.description(),
+//             Error::IoError(ref err) => err.description(),
+//             // Error::HyperError(ref err) => err.description(),
+//             Error::ReqwestError(ref err) => err.description(),
+//             Error::HttpError(ref status, ref _msg) => status.canonical_reason().unwrap(),
+//             Error::SerdeError(ref err) => err.description(),
+//             // Error::NativeTlsError(ref err) => err.description(),
+//             Error::ConfigError(msg) => msg,
+//             Error::SqliteError(ref err) => err.description(),
+//             Error::ChronoParseError(ref err) => err.description(),
+//             Error::LettreEmailError(ref err) => err.description(),
+//             Error::LettreSmtpError(ref err) => err.description(),
+//             Error::UnknownCommandError => "unknown command",
+//         }
+//     }
 
-    fn cause(&self) -> Option<&error::Error> {
-        match *self {
-            // 注意：これらは両方とも `err` を、その具象型（`&io::Error` か
-            // `&num::ParseIntError` のいずれか）から、トレイトオブジェクト
-            // `&Error` へ暗黙的にキャストします。どちらのエラー型も `Error` を
-            // 実装しているので、問題なく動きます。
-            Error::EnvError(ref err) => Some(err),
-            Error::IoError(ref err) => Some(err),
-            // Error::HyperError(ref err) => Some(err),
-            Error::ReqwestError(ref err) => Some(err),
-            Error::HttpError(_, _) => None,
-            Error::SerdeError(ref err) => Some(err),
-            // Error::NativeTlsError(ref err) => Some(err),
-            Error::ConfigError(_) => None,
-            Error::SqliteError(ref err) => Some(err),
-            Error::ChronoParseError(ref err) => Some(err),
-            Error::LettreEmailError(ref err) => Some(err),
-            Error::LettreSmtpError(ref err) => Some(err),
-            Error::UnknownCommandError => None,
-        }
-    }
-}
+//     fn cause(&self) -> Option<&error::Error> {
+//         match *self {
+//             // 注意：これらは両方とも `err` を、その具象型（`&io::Error` か
+//             // `&num::ParseIntError` のいずれか）から、トレイトオブジェクト
+//             // `&Error` へ暗黙的にキャストします。どちらのエラー型も `Error` を
+//             // 実装しているので、問題なく動きます。
+//             Error::EnvError(ref err) => Some(err),
+//             Error::IoError(ref err) => Some(err),
+//             // Error::HyperError(ref err) => Some(err),
+//             Error::ReqwestError(ref err) => Some(err),
+//             Error::HttpError(_, _) => None,
+//             Error::SerdeError(ref err) => Some(err),
+//             // Error::NativeTlsError(ref err) => Some(err),
+//             Error::ConfigError(_) => None,
+//             Error::SqliteError(ref err) => Some(err),
+//             Error::ChronoParseError(ref err) => Some(err),
+//             Error::LettreEmailError(ref err) => Some(err),
+//             Error::LettreSmtpError(ref err) => Some(err),
+//             Error::UnknownCommandError => None,
+//         }
+//     }
+// }
 
 impl From<env::VarError> for Error {
     fn from(err: env::VarError) -> Error {
@@ -107,8 +108,8 @@ impl From<reqwest::Error> for Error {
     }
 }
 
-impl From<reqwest::Response> for Error {
-    fn from(mut res: reqwest::Response) -> Error {
+impl From<reqwest::blocking::Response> for Error {
+    fn from(mut res: reqwest::blocking::Response) -> Error {
         let mut body = String::new();
         let result = res.read_to_string(&mut body);
         if result.is_ok() {

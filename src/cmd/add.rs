@@ -19,35 +19,35 @@ fn retrieve_user(db: &Db, screen_name: &str) -> Result<User, Error> {
 }
 
 pub fn execute_add(args: &Args) -> Result<(), Error> {
-    let config = try!(Config::load("default"));
+    let config = Config::load("default")?;
 
-    let db = try!(Db::open(&config.database_file));
-    let client = try!(TwitterClient::new());
+    let db = Db::open(&config.database_file)?;
+    let client = TwitterClient::new()?;
 
     let screen_name = args.arg_screen_name.clone().unwrap();
-    let user = try!(retrieve_user(&db, &screen_name));
+    let user = retrieve_user(&db, &screen_name)?;
 
-    let access_token = try!(client.get_access_token(&config.consumer_key, &config.consumer_secret));
-    let tweets = try!(client.get_tweets(&access_token, &screen_name, None));
+    let access_token = client.get_access_token(&config.consumer_key, &config.consumer_secret)?;
+    let tweets = client.get_tweets(&access_token, &screen_name, None)?;
 
     let mut insert_count = 0;
     for tweet in tweets {
         let exists = {
-            let tw = try!(db.get_tweet(tweet.id as i64));
+            let tw = db.get_tweet(tweet.id as i64)?;
             tw.is_some()
         };
         if exists {
             continue;
         }
 
-        try!(db.insert_tweet(&models::Tweet {
+        db.insert_tweet(&models::Tweet {
             id: tweet.id as i64,
             user_id: user.id,
             user_name: tweet.user_name,
-            created_at: try!(DateTime::parse_from_str(&tweet.created_at, "%a %b %e %T %z %Y")).with_timezone(&Utc),
+            created_at: DateTime::parse_from_str(&tweet.created_at, "%a %b %e %T %z %Y")?.with_timezone(&Utc),
             text: tweet.text,
             retweets: if tweet.retweets { 1 } else { 0 },
-            raw_json: tweet.raw_json }));
+            raw_json: tweet.raw_json })?;
         insert_count += 1;
     }
 

@@ -6,20 +6,20 @@ use config::Config;
 
 fn prompt(label: &str) -> Result<(), Error> {
     print!("put your {}: ", label);
-    try!(io::stdout().flush());
+    io::stdout().flush()?;
     return Ok(());
 }
 
 fn read_from_stdin(label: &str) -> Result<String, Error> {
     loop {
-        try!(prompt(label));
+        prompt(label)?;
 
         let stdin = io::stdin();
         let input = stdin.lock().lines().next();
         if input.is_none() {
             continue;
         }
-        let line = try!(input.unwrap());
+        let line = input.unwrap()?;
         if line.len() > 0 {
             return Ok(line);
         }
@@ -27,28 +27,28 @@ fn read_from_stdin(label: &str) -> Result<String, Error> {
 }
 
 pub fn execute_init(args: &Args) -> Result<(), Error> {
-    let consumer_key = try!(match args.arg_consumer_key {
+    let consumer_key = match args.arg_consumer_key {
         Some(ref consumer_key) => Ok(consumer_key.clone()),
         _ => read_from_stdin("Consumer Key"),
-    });
-    let consumer_secret = try!(match args.flag_secret {
+    }?;
+    let consumer_secret = match args.flag_secret {
         Some(ref consumer_secret) => Ok(consumer_secret.clone()),
         _ => read_from_stdin("Consumer Secret"),
-    });
-    let database_file = try!(match args.flag_db {
+    }?;
+    let database_file = match args.flag_db {
         Some(ref db) => Ok(db.clone()),
         _ => Config::default_database_file(),
-    });
-    let gmail_username = try!(match args.flag_gmail_username {
+    }?;
+    let gmail_username = match args.flag_gmail_username {
         Some(ref gmail_username) => Ok(gmail_username.clone()),
         _ => read_from_stdin("Gmail Username"),
-    });
-    let gmail_password = try!(match args.flag_gmail_password {
+    }?;
+    let gmail_password = match args.flag_gmail_password {
         Some(ref gmail_password) => Ok(gmail_password.clone()),
         _ => read_from_stdin("Gmail Password"),
-    });
-    let notification_from_email = try!(read_from_stdin("From Email Address"));
-    let notification_tos = try!(read_from_stdin("To Email Addresses(comma separated)"));
+    }?;
+    let notification_from_email = read_from_stdin("From Email Address")?;
+    let notification_tos = read_from_stdin("To Email Addresses(comma separated)")?;
     let v2: Vec<String> = notification_tos.split(",").map(|item| item.trim()).map(String::from).collect();
 
     let config = Config {
@@ -60,7 +60,7 @@ pub fn execute_init(args: &Args) -> Result<(), Error> {
         notification_from_email: notification_from_email,
         notification_tos: v2,
     };
-    try!(config.save("default"));
+    config.save("default")?;
 
     Ok(())
 }

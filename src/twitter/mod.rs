@@ -3,8 +3,6 @@ use std::vec::Vec;
 
 use base64;
 use reqwest;
-use reqwest::header::Authorization;
-use reqwest::header::UserAgent;
 use serde_json;
 
 use error::Error;
@@ -14,7 +12,7 @@ pub const TOKEN_URL: &'static str = "https://api.twitter.com/oauth2/token";
 
 #[derive(Debug)]
 pub struct TwitterClient {
-    pub client: reqwest::Client,
+    pub client: reqwest::blocking::Client,
 }
 
 #[derive(Debug)]
@@ -31,46 +29,46 @@ pub struct Tweet {
 impl TwitterClient {
     pub fn new() -> Result<TwitterClient, Error> {
         Ok(TwitterClient {
-            client: reqwest::Client::new(),
+            client: reqwest::blocking::Client::new(),
         })
     }
 
     pub fn get_access_token(&self, consumer_key: &str, consumer_secret: &str) -> Result<String, Error> {
         let authorization = base64::encode(format!("{}:{}", consumer_key, consumer_secret).as_bytes());
 
-        let mut builder = self.client.post(TOKEN_URL);
-        let req = builder.form(&[ ("grant_type", "client_credentials") ])
-            .header(Authorization(format!("Basic {}", authorization)))
-            .header(UserAgent::new(USER_AGENT));
-        let res = try!(req.send());
+        let builder = self.client.post(TOKEN_URL);
+        let req = builder.form(&[("grant_type", "client_credentials")])
+            .bearer_auth(authorization)
+            .header(reqwest::header::USER_AGENT, USER_AGENT);
+        let res = req.send()?;
         if !res.status().is_success() {
             return Err(Error::from(res))
         }
 
-        let body: serde_json::Value = try!(serde_json::from_reader(res));
+        let body: serde_json::Value = serde_json::from_reader(res)?;
         let access_token = String::from(body["access_token"].as_str().unwrap());
         Ok(access_token)
     }
 
     pub fn get_tweets(&self, access_token: &str, screen_name: &str, count: Option<u32>) -> Result<Vec<Tweet>, Error> {
         let mut builder = self.client.get("https://api.twitter.com/1.1/statuses/user_timeline.json");
-        builder.query(&[("screen_name", screen_name)]);
+        builder = builder.query(&[("screen_name", screen_name)]);
         if let Some(c) = count {
-            builder.query(&[("count", &format!("{}", c))]);
+            builder = builder.query(&[("count", &format!("{}", c))]);
         }
 
-        let req = builder.header(Authorization(format!("Bearer {}", access_token)))
-            .header(UserAgent::new(USER_AGENT));
-        let mut res = try!(req.send());
+        let req = builder.bearer_auth(access_token)
+            .header(reqwest::header::USER_AGENT, USER_AGENT);
+        let mut res = req.send()?;
         if !res.status().is_success() {
             return Err(Error::from(res))
         }
 
         let mut body = String::new();
-        try!(res.read_to_string(&mut body));
+        res.read_to_string(&mut body)?;
 
         let mut results: Vec<Tweet> = Vec::new();
-        let timeline_json: serde_json::Value = try!(serde_json::from_str(&body));
+        let timeline_json: serde_json::Value = serde_json::from_str(&body)?;
         match timeline_json.as_array() {
             Some(entries) => {
                 for entry in entries {

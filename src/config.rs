@@ -25,30 +25,30 @@ impl Config {
             Err(_) => (),
         };
 
-        let home = try!(env::var("HOME"));
+        let home = env::var("HOME")?;
         let mut homepath = path::PathBuf::from(home);
         homepath.push(".twitnot");
         return Ok(homepath);
     }
 
     pub fn default_database_file() -> Result<String, Error> {
-        let config_dir = try!(Config::home_dir());
+        let config_dir = Config::home_dir()?;
         Ok(String::from(config_dir.as_path().join("default.sqlite3").to_str().unwrap()))
     }
 
     pub fn load(profile: &str) -> Result<Config, Error> {
-        let config_dir = try!(Self::home_dir());
+        let config_dir = Self::home_dir()?;
         let filepath = config_dir.as_path().join(profile);
-        let file = try!(fs::File::open(filepath));
+        let file = fs::File::open(filepath)?;
 
-        let cfg: serde_json::Value = try!(serde_json::from_reader(file));
+        let cfg: serde_json::Value = serde_json::from_reader(file)?;
         let str_val = |key: &'static str| cfg[key].as_str().map(String::from).ok_or(Error::ConfigError(key));
-        let consumer_key = try!(str_val("consumer_key"));
-        let consumer_secret = try!(str_val("consumer_secret"));
-        let database_file = try!(str_val("database_file"));
-        let gmail_username = try!(str_val("gmail_username"));
-        let gmail_password = try!(str_val("gmail_password"));
-        let notification_from_email = try!(str_val("notification_from_email"));
+        let consumer_key = str_val("consumer_key")?;
+        let consumer_secret = str_val("consumer_secret")?;
+        let database_file = str_val("database_file")?;
+        let gmail_username = str_val("gmail_username")?;
+        let gmail_password = str_val("gmail_password")?;
+        let notification_from_email = str_val("notification_from_email")?;
         let notification_tos: Vec<String> = if let Some(ary) = cfg["notification_tos"].as_array() {
             ary.into_iter().filter_map(|item| item.as_str().map(String::from)).collect()
         } else {
@@ -77,13 +77,13 @@ impl Config {
             "notification_tos": self.notification_tos,
         });
 
-        let config_dir = try!(Self::home_dir());
-        try!(fs::create_dir_all(config_dir.as_path()));
+        let config_dir = Self::home_dir()?;
+        fs::create_dir_all(config_dir.as_path())?;
 
         let filepath = config_dir.as_path().join(profile);
-        let mut file = try!(fs::File::create(filepath));
+        let mut file = fs::File::create(filepath)?;
 
-        try!(file.write_all(cfg.to_string().as_bytes()));
+        file.write_all(cfg.to_string().as_bytes())?;
 
         return Ok(());
     }
