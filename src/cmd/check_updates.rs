@@ -3,12 +3,11 @@ use std::str;
 use base64;
 
 use chrono::{DateTime, Utc};
-
+use clap::ArgMatches;
 use lettre::smtp::authentication::IntoCredentials;
 use lettre::{SmtpClient, Transport};
 use lettre_email::Email;
 
-use super::Args;
 use crate::db::Db;
 use crate::db::models::{User, Tweet};
 use crate::error::Error;
@@ -30,7 +29,7 @@ fn encode_subject(subject: &str) -> String {
             },
         }
     }
-    
+
     ret
 }
 
@@ -100,11 +99,11 @@ fn check_updates(config: &Config, db: &Db, user: &User) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn execute_check_updates(args: &Args) -> Result<(), Error> {
+pub fn execute_check_updates(args: &ArgMatches) -> Result<(), Error> {
     let config = Config::load("default")?;
     let db = Db::open(&config.database_file)?;
 
-    if let Some(ref screen_name) = args.flag_screen_name {
+    if let Some(screen_name) = args.value_of("screen_name") {
         let opt_users = db.get_user_by_screen_name(screen_name)?;
         if opt_users.is_some() {
             check_updates(&config, &db, &opt_users.unwrap())?;

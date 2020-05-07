@@ -1,14 +1,15 @@
-use super::Args;
+use clap::ArgMatches;
+
 use crate::db::Db;
 use crate::error::Error;
 use crate::config::Config;
 
-pub fn execute_remove(args: &Args) -> Result<(), Error> {
+pub fn execute_remove(args: &ArgMatches) -> Result<(), Error> {
     let config = Config::load("default")?;
     let db = Db::open(&config.database_file)?;
 
-    let screen_name = args.arg_screen_name.clone().unwrap();
-    let opt_user = db.get_user_by_screen_name(&screen_name)?;
+    let screen_name = args.value_of("screen_name").unwrap();
+    let opt_user = db.get_user_by_screen_name(screen_name)?;
     if opt_user.is_none() {
         return Ok(());
     }

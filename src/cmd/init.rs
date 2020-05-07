@@ -1,6 +1,7 @@
 use std::io::{self,BufRead,Write};
 
-use super::Args;
+use clap::ArgMatches;
+
 use crate::error::Error;
 use crate::config::Config;
 
@@ -26,27 +27,24 @@ fn read_from_stdin(label: &str) -> Result<String, Error> {
     }
 }
 
-pub fn execute_init(args: &Args) -> Result<(), Error> {
-    let consumer_key = match args.arg_consumer_key {
-        Some(ref consumer_key) => Ok(consumer_key.clone()),
-        _ => read_from_stdin("Consumer Key"),
-    }?;
-    let consumer_secret = match args.flag_secret {
-        Some(ref consumer_secret) => Ok(consumer_secret.clone()),
-        _ => read_from_stdin("Consumer Secret"),
-    }?;
-    let database_file = match args.flag_db {
-        Some(ref db) => Ok(db.clone()),
-        _ => Config::default_database_file(),
-    }?;
-    let gmail_username = match args.flag_gmail_username {
-        Some(ref gmail_username) => Ok(gmail_username.clone()),
-        _ => read_from_stdin("Gmail Username"),
-    }?;
-    let gmail_password = match args.flag_gmail_password {
-        Some(ref gmail_password) => Ok(gmail_password.clone()),
-        _ => read_from_stdin("Gmail Password"),
-    }?;
+pub fn execute_init(args: &ArgMatches) -> Result<(), Error> {
+    let consumer_key = String::from(args.value_of("consumer_key").unwrap_or_else(|| panic!("specify consumer key")));
+    let consumer_secret = match args.value_of("consumer_secret") {
+        Some(consumer_secret) => String::from(consumer_secret),
+        _ => read_from_stdin("Consumer Secret")?,
+    };
+    let database_file = match args.value_of("database_file") {
+        Some(database_file) => String::from(database_file),
+        _ => Config::default_database_file()?,
+    };
+    let gmail_username = match args.value_of("gmail_username") {
+        Some(gmail_username) => String::from(gmail_username),
+        _ => read_from_stdin("Gmail Username")?,
+    };
+    let gmail_password = match args.value_of("gmail_password") {
+        Some(gmail_password) => String::from(gmail_password),
+        _ => read_from_stdin("Gmail Password")?,
+    };
     let notification_from_email = read_from_stdin("From Email Address")?;
     let notification_tos = read_from_stdin("To Email Addresses(comma separated)")?;
     let v2: Vec<String> = notification_tos.split(",").map(|item| item.trim()).map(String::from).collect();

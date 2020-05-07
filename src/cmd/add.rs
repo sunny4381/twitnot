@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
+use clap::ArgMatches;
 
-use super::Args;
 use crate::db::Db;
 use crate::db::models::{self, User};
 use crate::error::Error;
@@ -18,14 +18,14 @@ fn retrieve_user(db: &Db, screen_name: &str) -> Result<User, Error> {
     db.insert_user(screen_name)
 }
 
-pub fn execute_add(args: &Args) -> Result<(), Error> {
+pub fn execute_add(args: &ArgMatches) -> Result<(), Error> {
     let config = Config::load("default")?;
 
     let db = Db::open(&config.database_file)?;
     let client = TwitterClient::new()?;
 
-    let screen_name = args.arg_screen_name.clone().unwrap();
-    let user = retrieve_user(&db, &screen_name)?;
+    let screen_name = args.value_of("screen_name").unwrap();
+    let user = retrieve_user(&db, screen_name)?;
 
     let access_token = client.get_access_token(&config.consumer_key, &config.consumer_secret)?;
     let tweets = client.get_tweets(&access_token, &screen_name, None)?;
