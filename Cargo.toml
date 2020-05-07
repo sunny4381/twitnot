@@ -13,6 +13,7 @@ encoding = "*"
 env_logger = "*"
 lettre = "*"
 lettre_email = "*"
+log = "*"
 mime = "*"
 reqwest = { version = "*", features = ["blocking", "json"] }
 rusqlite = { version = "*", features = ["bundled", "chrono"] }
