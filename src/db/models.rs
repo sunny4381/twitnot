@@ -1,5 +1,7 @@
+use std::convert::TryFrom;
+
 use chrono::{DateTime, Utc};
-use sqlite3::ResultRow;
+use rusqlite::Row;
 
 #[derive(Debug)]
 pub struct User {
@@ -19,26 +21,30 @@ pub struct Tweet {
     pub raw_json: String,
 }
 
-impl<'a, 'res, 'row> From<&'a ResultRow<'res, 'row>> for User {
-    fn from(row: &'a ResultRow<'res, 'row>) -> User {
-        User {
-            id: row.column_int(0),
-            screen_name: row.column_text(1).unwrap(),
-            created_at: row.column_text(2).unwrap().parse::<DateTime<Utc>>().unwrap(),
-        }
+impl<'a, 'stmt> TryFrom<&'a Row<'stmt>> for User {
+    type Error = rusqlite::Error;
+
+    fn try_from(row: &'a Row<'stmt>) -> Result<Self, Self::Error> {
+        Ok(User {
+            id: row.get(0)?,
+            screen_name: row.get(1)?,
+            created_at: row.get(2)?,
+        })
     }
 }
 
-impl<'a, 'res, 'row> From<&'a ResultRow<'res, 'row>> for Tweet {
-    fn from(row: &'a ResultRow<'res, 'row>) -> Tweet {
-        Tweet {
-            id: row.column_int64(0),
-            user_id: row.column_int(1),
-            user_name: row.column_text(2).unwrap(),
-            created_at: row.column_text(3).unwrap().parse::<DateTime<Utc>>().unwrap(),
-            text: row.column_text(4).unwrap(),
-            retweets: row.column_int(5),
-            raw_json: row.column_text(6).unwrap(),
-        }
+impl<'a> TryFrom<&'a Row<'_>> for Tweet {
+    type Error = rusqlite::Error;
+
+    fn try_from(row: &'a Row<'_>) -> Result<Self, Self::Error> {
+        Ok(Tweet {
+            id: row.get(0)?,
+            user_id: row.get(1)?,
+            user_name: row.get(2)?,
+            created_at: row.get(3)?,
+            text: row.get(4)?,
+            retweets: row.get(5)?,
+            raw_json: row.get(6)?,
+        })
     }
 }

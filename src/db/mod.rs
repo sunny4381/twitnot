@@ -1,139 +1,84 @@
+use std::convert::TryFrom;
 use chrono::Utc;
+use rusqlite::{self, NO_PARAMS, Connection, params};
 
 use crate::error::Error;
-
-use sqlite3::DatabaseConnection;
-use sqlite3::access;
-use sqlite3::StatementUpdate;
-use sqlite3::SqliteError;
-use sqlite3::SqliteErrorCode;
 
 pub mod models;
 mod query;
 
 pub struct Db {
-    conn: DatabaseConnection,
-}
-
-fn mk_err1(desc: &'static str) -> Error {
-    mk_err2(SqliteErrorCode::SQLITE_ERROR, desc)
-}
-
-fn mk_err2(kind: SqliteErrorCode, desc: &'static str) -> Error {
-    Error::from(SqliteError {
-        kind: kind,
-        desc: desc,
-        detail: None,
-    })
+    conn: Connection,
 }
 
 impl Db {
     pub fn open(database_file: &str) -> Result<Db, Error> {
-        let access = access::ByFilename { flags: Default::default(), filename: database_file };
-        let mut conn = DatabaseConnection::new(access)?;
+        let conn = Connection::open(database_file)?;
 
-        conn.exec(query::ENABLE_FOREIGN_KEY)?;
-        conn.exec(query::CREATE_USERS_TABLE)?;
-        conn.exec(query::CREATE_TWEETS_TABLE)?;
-        conn.exec(query::CREATE_INDEX_USER_ID_ON_TWEETS)?;
-        conn.exec(query::CREATE_INDEX_CREATED_AT_ON_TWEETS)?;
+        conn.execute(query::ENABLE_FOREIGN_KEY, NO_PARAMS)?;
+        conn.execute(query::CREATE_USERS_TABLE, NO_PARAMS)?;
+        conn.execute(query::CREATE_TWEETS_TABLE, NO_PARAMS)?;
+        conn.execute(query::CREATE_INDEX_USER_ID_ON_TWEETS, NO_PARAMS)?;
+        conn.execute(query::CREATE_INDEX_CREATED_AT_ON_TWEETS, NO_PARAMS)?;
+
         Ok(Db { conn: conn })
     }
 
     pub fn begin_transaction(&self) -> Result<(), Error> {
-        let mut stmt = self.conn.prepare(query::BEGIN_TRANSACTION)?;
-        let mut results = stmt.execute();
-        loop {
-            match results.step()? {
-                None => break,
-                Some(ref _row) => (),
-            }
-        }
+        self.conn.execute(query::BEGIN_TRANSACTION, NO_PARAMS)?;
         Ok(())
     }
 
     pub fn commit(&self) -> Result<(), Error> {
-        let mut stmt = self.conn.prepare(query::COMMIT_TRANSACTION)?;
-        let mut results = stmt.execute();
-        loop {
-            match results.step()? {
-                None => break,
-                Some(ref _row) => (),
-            }
-        }
+        self.conn.execute(query::COMMIT_TRANSACTION, NO_PARAMS)?;
         Ok(())
     }
 
     pub fn get_all_users(&self) -> Result<Vec<models::User>, Error> {
         let mut stmt = self.conn.prepare(query::GET_ALL_USERS)?;
-        let mut users = vec!();
-        let mut results = stmt.execute();
-        loop {
-            match results.step()? {
-                None => break,
-                Some(ref row) => users.push(models::User::from(row)),
-            }
-        }
+        let iter = stmt.query_map(NO_PARAMS, |row| Ok(models::User::try_from(row)?))?;
 
-        Ok(users)
+        let users: Result<Vec<models::User>, rusqlite::Error> = iter.collect();
+        Ok(users?)
     }
 
     pub fn get_user_by_screen_name(&self, screen_name: &str) -> Result<Option<models::User>, Error> {
         let mut stmt = self.conn.prepare(query::GET_USER_BY_SCREEN_NAME)?;
-        stmt.bind_text(1, screen_name)?;
-        let mut users = vec!();
-        let mut results = stmt.execute();
-        loop {
-            match results.step()? {
-                None => break,
-                Some(ref row) => {
-                    users.push(models::User::from(row));
-                    break;
-                },
-            }
-        }
+        let mut iter = stmt.query_map(params![screen_name], |row| Ok(models::User::try_from(row)?))?;
 
-        Ok(users.pop())
+        Ok(match iter.next() {
+            Some(result) => Some(result?),
+            _ => None
+        })
     }
 
     pub fn get_user_by_row_id(&self, row_id: i64) -> Result<Option<models::User>, Error> {
         let mut stmt = self.conn.prepare(query::GET_USER_BY_ROW_ID)?;
-        stmt.bind_int64(1, row_id)?;
-        let mut users = vec!();
-        let mut results = stmt.execute();
-        loop {
-            match results.step()? {
-                None => break,
-                Some(ref row) => {
-                    users.push(models::User::from(row));
-                    break;
-                }
-            }
-        }
+        let mut iter = stmt.query_map(&[row_id], |row| Ok(models::User::try_from(row)?))?;
 
-        Ok(users.pop())
+        Ok(match iter.next() {
+            Some(result) => Some(result?),
+            _ => None
+        })
     }
 
     pub fn insert_user(&self, screen_name: &str) -> Result<models::User, Error> {
         let mut stmt = self.conn.prepare(query::INSERT_USER)?;
-        stmt.bind_text(1, screen_name)?;
-        stmt.bind_text(2, &Utc::now().to_rfc3339())?;
-        let changes = stmt.update(&[])?;
+        let changes = stmt.execute(params![screen_name, &Utc::now()])?;
         if changes == 0 {
-            return Err(mk_err2(SqliteErrorCode::SQLITE_NOTFOUND, "insert error"));
+            return Err(Error::ModelError("insert user error"));
         }
 
         let row_id = self.conn.last_insert_rowid();
         let opt_user = self.get_user_by_row_id(row_id)?;
-        opt_user.ok_or_else(|| mk_err2(SqliteErrorCode::SQLITE_NOTFOUND, "insert error"))
+        opt_user.ok_or_else(|| Error::ModelError("insert user error"))
     }
 
     pub fn delete_user(&self, id: i32) -> Result<(), Error> {
         let mut stmt = self.conn.prepare(query::DELETE_USER)?;
-        stmt.bind_int(1, id)?;
-        let changes = stmt.update(&[])?;
+        let changes = stmt.execute(params![id])?;
         if changes == 0 {
-            return Err(mk_err1("delete error"));
+            return Err(Error::ModelError("delete user error"));
         }
 
         Ok(())
@@ -141,81 +86,57 @@ impl Db {
 
     pub fn get_tweets_by_user_id(&self, user_id: i32, limit: i32) -> Result<Vec<models::Tweet>, Error> {
         let mut stmt = self.conn.prepare(query::GET_TWEETS_BY_USER_ID)?;
-        stmt.bind_int(1, user_id)?;
-        stmt.bind_int(2, limit)?;
-        let mut tweets = vec!();
-        let mut results = stmt.execute();
-        loop {
-            match results.step()? {
-                None => break,
-                Some(ref row) => tweets.push(models::Tweet::from(row)),
-            }
-        }
+        let iter = stmt.query_map(params![user_id, limit], |row| {
+            Ok(models::Tweet::try_from(row)?)
+        })?;
 
-        Ok(tweets)
+        let tweets: Result<Vec<models::Tweet>, rusqlite::Error> = iter.collect();
+        Ok(tweets?)
     }
 
     pub fn get_tweet(&self, id: i64) -> Result<Option<models::Tweet>, Error> {
         let mut stmt = self.conn.prepare(query::GET_TWEET)?;
-        stmt.bind_int64(1, id)?;
-        let mut tweets = vec!();
-        let mut results = stmt.execute();
-        loop {
-            match results.step()? {
-                None => break,
-                Some(ref row) => {
-                    tweets.push(models::Tweet::from(row));
-                    break;
-                },
-            }
-        }
+        let mut iter = stmt.query_map(&[id], |row| {
+            Ok(models::Tweet::try_from(row)?)
+        })?;
 
-        Ok(tweets.pop())
+        Ok(match iter.next() {
+            Some(result) => Some(result?),
+            _ => None
+        })
     }
 
     pub fn get_tweet_by_row_id(&self, row_id: i64) -> Result<Option<models::Tweet>, Error> {
         let mut stmt = self.conn.prepare(query::GET_TWEET_BY_ROW_ID)?;
-        stmt.bind_int64(1, row_id)?;
-        let mut tweets = vec!();
-        let mut results = stmt.execute();
-        loop {
-            match results.step()? {
-                None => break,
-                Some(ref row) => {
-                    tweets.push(models::Tweet::from(row));
-                    break;
-                },
-            }
-        }
+        let mut iter = stmt.query_map(&[row_id], |row| {
+            Ok(models::Tweet::try_from(row)?)
+        })?;
 
-        Ok(tweets.pop())
+        Ok(match iter.next() {
+            Some(result) => Some(result?),
+            _ => None
+        })
     }
 
     pub fn insert_tweet(&self, tweet: &models::Tweet) -> Result<models::Tweet, Error> {
         let mut stmt = self.conn.prepare(query::INSERT_TWEET)?;
-        stmt.bind_int64(1, tweet.id)?;
-        stmt.bind_int(2, tweet.user_id)?;
-        stmt.bind_text(3, &tweet.user_name)?;
-        stmt.bind_text(4, &tweet.created_at.to_rfc3339())?;
-        stmt.bind_text(5, &tweet.text)?;
-        stmt.bind_int(6, tweet.retweets)?;
-        stmt.bind_text(7, &tweet.raw_json)?;
-        let changes = stmt.update(&[])?;
+        let changes = stmt.execute(params![
+            tweet.id, tweet.user_id, tweet.user_name.as_str(), &tweet.created_at, tweet.text.as_str(), tweet.retweets, tweet.raw_json.as_str()
+        ])?;
         if changes == 0 {
-            return Err(mk_err2(SqliteErrorCode::SQLITE_NOTFOUND, "insert error"));
+            return Err(Error::ModelError("insert tweet error"));
         }
 
         let row_id = self.conn.last_insert_rowid();
         let opt_tweet = self.get_tweet_by_row_id(row_id)?;
-        opt_tweet.ok_or_else(|| mk_err2(SqliteErrorCode::SQLITE_NOTFOUND, "insert error"))
+        opt_tweet.ok_or_else(|| Error::ModelError("insert tweet error"))
     }
 
     pub fn delete_tweets_by_user_id(&self, user_id: i32) -> Result<(), Error> {
         let mut stmt = self.conn.prepare(query::DELETE_TWEETS_BY_USER_ID)?;
-        stmt.bind_int(1, user_id)?;
-        let changes = stmt.update(&[])?;
+        let changes = stmt.execute(params![user_id])?;
         if changes == 0 {
-            return Err(mk_err1("delete error"));
+            return Err(Error::ModelError("delete error. no users are found"));
         }
 
         Ok(())

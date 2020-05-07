@@ -1,5 +1,4 @@
 use std::env;
-// use std::error;
 use std::io;
 use std::io::Read;
 use std::fmt;
@@ -9,7 +8,7 @@ use lettre;
 use lettre_email;
 use reqwest;
 use serde_json;
-use sqlite3;
+use rusqlite;
 
 #[derive(Debug)]
 pub enum Error {
@@ -19,7 +18,8 @@ pub enum Error {
     HttpError(reqwest::StatusCode, String),
     SerdeError(serde_json::error::Error),
     ConfigError(&'static str),
-    SqliteError(sqlite3::SqliteError),
+    SqliteError(rusqlite::Error),
+    ModelError(&'static str),
     ChronoParseError(chrono::ParseError),
     LettreEmailError(lettre_email::error::Error),
     LettreSmtpError(lettre::smtp::error::Error),
@@ -38,6 +38,7 @@ impl fmt::Display for Error {
             // Error::NativeTlsError(ref err) => write!(f, "NativeTls error: {}", err),
             Error::ConfigError(msg) => write!(f, "Config error: {}", msg),
             Error::SqliteError(ref err) => write!(f, "Sqlite error: {}", err),
+            Error::ModelError(msg) => write!(f, "Model error: {}", msg),
             Error::ChronoParseError(ref err) => write!(f, "Chrono Parse error: {}", err),
             Error::LettreEmailError(ref err) => write!(f, "Lettre Email error: {}", err),
             Error::LettreSmtpError(ref err) => write!(f, "Lettre Smtp error: {}", err),
@@ -126,8 +127,8 @@ impl From<serde_json::error::Error> for Error {
     }
 }
 
-impl From<sqlite3::SqliteError> for Error {
-    fn from(err: sqlite3::SqliteError) -> Error {
+impl From<rusqlite::Error> for Error {
+    fn from(err: rusqlite::Error) -> Error {
         Error::SqliteError(err)
     }
 }
