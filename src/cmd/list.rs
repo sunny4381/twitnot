@@ -1,12 +1,12 @@
-use ::Args;
-use config::Config;
-use error::Error;
-use db::Db;
+use super::Args;
+use crate::config::Config;
+use crate::error::Error;
+use crate::db::Db;
 
 pub fn execute_list(args: &Args) -> Result<(), Error> {
     let config = Config::load("default")?;
     let db = Db::open(&config.database_file)?;
-    
+
     if let Some(ref screen_name) = args.arg_screen_name {
         // list tweets
         if let Some(ref user) = db.get_user_by_screen_name(&screen_name)? {

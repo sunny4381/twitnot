@@ -1,7 +1,7 @@
 use super::Args;
-use db::Db;
-use error::Error;
-use config::Config;
+use crate::db::Db;
+use crate::error::Error;
+use crate::config::Config;
 
 pub fn execute_remove(args: &Args) -> Result<(), Error> {
     let config = Config::load("default")?;

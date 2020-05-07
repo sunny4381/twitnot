@@ -10,7 +10,7 @@ use self::init::execute_init;
 use self::list::execute_list;
 use self::check_updates::execute_check_updates;
 use self::remove::execute_remove;
-use error::Error;
+use crate::error::Error;
 
 pub fn execute(args: &Args) -> Result<(), Error> {
     if args.cmd_init {

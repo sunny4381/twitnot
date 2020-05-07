@@ -5,7 +5,7 @@ use base64;
 use reqwest;
 use serde_json;
 
-use error::Error;
+use crate::error::Error;
 
 pub const USER_AGENT: &'static str = "twitnot/0.1";
 pub const TOKEN_URL: &'static str = "https://api.twitter.com/oauth2/token";

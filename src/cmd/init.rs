@@ -1,8 +1,8 @@
 use std::io::{self,BufRead,Write};
 
 use super::Args;
-use error::Error;
-use config::Config;
+use crate::error::Error;
+use crate::config::Config;
 
 fn prompt(label: &str) -> Result<(), Error> {
     print!("put your {}: ", label);

@@ -9,11 +9,11 @@ use lettre::{SmtpClient, Transport};
 use lettre_email::Email;
 
 use super::Args;
-use db::Db;
-use db::models::{User, Tweet};
-use error::Error;
-use config::Config;
-use twitter::TwitterClient;
+use crate::db::Db;
+use crate::db::models::{User, Tweet};
+use crate::error::Error;
+use crate::config::Config;
+use crate::twitter::TwitterClient;
 
 fn encode_subject(subject: &str) -> String {
     let mut slices = subject.as_bytes().chunks(3 * 14 + 1);

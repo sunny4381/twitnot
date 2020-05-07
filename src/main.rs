@@ -26,8 +26,8 @@ use std::io::{self, Write};
 use docopt::Docopt;
 use dotenv::dotenv;
 
-use cmd::execute;
-use error::Error;
+use crate::cmd::execute;
+use crate::error::Error;
 
 const USAGE: &'static str = r#"
 Tweet Monitor & Notification.

@@ -1,11 +1,11 @@
 use chrono::{DateTime, Utc};
 
 use super::Args;
-use db::Db;
-use db::models::{self, User};
-use error::Error;
-use config::Config;
-use twitter::TwitterClient;
+use crate::db::Db;
+use crate::db::models::{self, User};
+use crate::error::Error;
+use crate::config::Config;
+use crate::twitter::TwitterClient;
 
 fn retrieve_user(db: &Db, screen_name: &str) -> Result<User, Error> {
     let user1 = db.get_user_by_screen_name(screen_name);
