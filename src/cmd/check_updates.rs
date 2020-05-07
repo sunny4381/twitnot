@@ -58,7 +58,7 @@ fn send_notification_mail(config: &Config, user: &User, tweet: &Tweet) -> Result
 }
 
 fn check_updates(config: &Config, db: &Db, user: &User) -> Result<(), Error> {
-    let client = TwitterClient::new()?;
+    let client = TwitterClient::new();
     let access_token = client.get_access_token(&config.consumer_key, &config.consumer_secret)?;
     let tweets = client.get_tweets(&access_token, &user.screen_name, None)?;
 

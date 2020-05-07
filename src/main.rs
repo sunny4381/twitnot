@@ -8,49 +8,13 @@ use std::io::{self, Write};
 
 use clap::clap_app;
 use dotenv::dotenv;
-// use serde_derive::Deserialize;
 
 use crate::cmd::execute;
 use crate::error::Error;
 
-// const USAGE: &'static str = r#"
-// Tweet Monitor & Notification.
-
-// Usage:
-//   twitnot init <consumer-key> [--secret=<consumer-secret>] [--db=<database-file>] [--gmail-username=<gmail-username>] [--gmail-password=<gmail-password>]
-//   twitnot add <screen-name>
-//   twitnot list [<screen-name>] [--max=<max-count>]
-//   twitnot remove <screen-name>
-//   twitnot check-updates [--screen-name=<screen-name>]
-//   twitnot (-h | --help)
-// Options:
-//   -h, --help     Show this screen.
-//   --secret=<consumer-secret> Specify consucmer secret.
-//   --screen-name=<screen-name> Specify screen name.
-//   --db=<databaase-file> Specify database file.
-//   --max=<max-count> Specify max count of tweet [default is 10].
-// "#;
-
-// #[derive(Debug, Deserialize)]
-// pub struct Args {
-//     flag_secret: Option<String>,
-//     flag_gmail_username: Option<String>,
-//     flag_gmail_password: Option<String>,
-//     flag_screen_name: Option<String>,
-//     flag_db: Option<String>,
-//     flag_max: Option<u32>,
-//     arg_consumer_key: Option<String>,
-//     arg_screen_name: Option<String>,
-//     cmd_init: bool,
-//     cmd_list: bool,
-//     cmd_add: bool,
-//     cmd_remove: bool,
-//     cmd_check_updates: bool,
-// }
-
 fn main() {
-    env_logger::init();
     dotenv().ok();
+    env_logger::init();
 
     let args = clap_app!(twitnot =>
         (version: "0.1.0")

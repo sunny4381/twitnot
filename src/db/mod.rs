@@ -1,5 +1,6 @@
 use std::convert::TryFrom;
 use chrono::Utc;
+use log::info;
 use rusqlite::{self, NO_PARAMS, Connection, params};
 
 use crate::error::Error;
@@ -75,11 +76,8 @@ impl Db {
     }
 
     pub fn delete_user(&self, id: i32) -> Result<(), Error> {
-        let mut stmt = self.conn.prepare(query::DELETE_USER)?;
-        let changes = stmt.execute(params![id])?;
-        if changes == 0 {
-            return Err(Error::ModelError("delete user error"));
-        }
+        let changes = self.conn.execute(query::DELETE_USER, &[id])?;
+        info!("{} users were deleted", changes);
 
         Ok(())
     }
@@ -133,11 +131,8 @@ impl Db {
     }
 
     pub fn delete_tweets_by_user_id(&self, user_id: i32) -> Result<(), Error> {
-        let mut stmt = self.conn.prepare(query::DELETE_TWEETS_BY_USER_ID)?;
-        let changes = stmt.execute(params![user_id])?;
-        if changes == 0 {
-            return Err(Error::ModelError("delete error. no users are found"));
-        }
+        let changes = self.conn.execute(query::DELETE_TWEETS_BY_USER_ID, &[user_id])?;
+        log::info!("{} tweets were deleted", changes);
 
         Ok(())
     }

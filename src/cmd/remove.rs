@@ -11,6 +11,7 @@ pub fn execute_remove(args: &ArgMatches) -> Result<(), Error> {
     let screen_name = args.value_of("screen_name").unwrap();
     let opt_user = db.get_user_by_screen_name(screen_name)?;
     if opt_user.is_none() {
+        println!("specified user is not existed");
         return Ok(());
     }
 
@@ -20,5 +21,6 @@ pub fn execute_remove(args: &ArgMatches) -> Result<(), Error> {
     db.delete_tweets_by_user_id(user.id)?;
     db.commit()?;
 
+    println!("user is removed");
     Ok(())
 }

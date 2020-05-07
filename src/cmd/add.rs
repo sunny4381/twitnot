@@ -7,25 +7,25 @@ use crate::error::Error;
 use crate::config::Config;
 use crate::twitter::TwitterClient;
 
-fn retrieve_user(db: &Db, screen_name: &str) -> Result<User, Error> {
-    let user1 = db.get_user_by_screen_name(screen_name);
-    if user1.is_ok() {
-        if let Some(user) = user1.unwrap() {
-            return Ok(user);
-        }
+fn retrieve_or_insert_user(db: &Db, screen_name: &str) -> Result<User, Error> {
+    if let Some(user) = db.get_user_by_screen_name(screen_name)? {
+        return Ok(user);
     }
 
-    db.insert_user(screen_name)
+    let user = db.insert_user(screen_name)?;
+    println!("{}: added", user.screen_name.as_str());
+
+    Ok(user)
 }
 
 pub fn execute_add(args: &ArgMatches) -> Result<(), Error> {
     let config = Config::load("default")?;
 
     let db = Db::open(&config.database_file)?;
-    let client = TwitterClient::new()?;
+    let client = TwitterClient::new();
 
     let screen_name = args.value_of("screen_name").unwrap();
-    let user = retrieve_user(&db, screen_name)?;
+    let user = retrieve_or_insert_user(&db, screen_name)?;
 
     let access_token = client.get_access_token(&config.consumer_key, &config.consumer_secret)?;
     let tweets = client.get_tweets(&access_token, &screen_name, None)?;

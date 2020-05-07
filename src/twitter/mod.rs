@@ -1,8 +1,7 @@
 use std::io::Read;
 use std::vec::Vec;
 
-use base64;
-use reqwest;
+use reqwest::blocking::Client;
 use serde_json;
 
 use crate::error::Error;
@@ -27,19 +26,18 @@ pub struct Tweet {
 }
 
 impl TwitterClient {
-    pub fn new() -> Result<TwitterClient, Error> {
-        Ok(TwitterClient {
-            client: reqwest::blocking::Client::new(),
-        })
+    pub fn new() -> TwitterClient {
+        TwitterClient {
+            client: Client::new(),
+        }
     }
 
     pub fn get_access_token(&self, consumer_key: &str, consumer_secret: &str) -> Result<String, Error> {
-        let authorization = base64::encode(format!("{}:{}", consumer_key, consumer_secret).as_bytes());
-
-        let builder = self.client.post(TOKEN_URL);
-        let req = builder.form(&[("grant_type", "client_credentials")])
-            .bearer_auth(authorization)
-            .header(reqwest::header::USER_AGENT, USER_AGENT);
+        let req = self.client.post(TOKEN_URL)
+            .basic_auth(consumer_key, Some(consumer_secret))
+            .header(reqwest::header::USER_AGENT, USER_AGENT)
+            .header(reqwest::header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+            .form(&[("grant_type", "client_credentials")]);
         let res = req.send()?;
         if !res.status().is_success() {
             return Err(Error::from(res))
