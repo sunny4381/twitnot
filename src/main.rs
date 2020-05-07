@@ -1,20 +1,3 @@
-extern crate base64;
-extern crate chrono;
-extern crate docopt;
-extern crate dotenv;
-extern crate encoding;
-extern crate env_logger;
-extern crate lettre;
-extern crate lettre_email;
-extern crate mime;
-extern crate reqwest;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate serde_json;
-extern crate sqlite3;
-extern crate time;
-
 mod cmd;
 mod config;
 mod db;
@@ -25,6 +8,8 @@ use std::io::{self, Write};
 
 use docopt::Docopt;
 use dotenv::dotenv;
+
+use serde_derive::Deserialize;
 
 use crate::cmd::execute;
 use crate::error::Error;

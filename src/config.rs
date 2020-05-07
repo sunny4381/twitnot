@@ -3,7 +3,7 @@ use std::fs;
 use std::io::Write;
 use std::path;
 
-use serde_json;
+use serde_json::{self, json};
 
 use crate::error::Error;
 
