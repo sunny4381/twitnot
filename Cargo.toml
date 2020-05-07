@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 base64 = "*"
 chrono = "*"
-docopt = "*"
+clap = "*"
 dotenv = "*"
 encoding = "*"
 env_logger = "*"
