@@ -15,19 +15,14 @@ use crate::config::Config;
 use crate::twitter::TwitterClient;
 
 fn encode_subject(subject: &str) -> String {
-    let mut slices = subject.as_bytes().chunks(3 * 14 + 1);
+    let slices = subject.as_bytes().chunks(3 * 14);
     let mut ret = String::new();
-    loop {
-        match slices.next() {
-            None => break,
-            Some(ref slice) => {
-                let b64 = base64::encode(slice);
-                if ret.len() > 0 {
-                    ret.push_str("\r\n ");
-                }
-                ret.push_str(&format!("=?UTF-8?B?{}?=", b64));
-            },
+    for slice in slices {
+        let b64 = base64::encode(slice);
+        if ret.len() > 0 {
+            ret.push_str("\r\n ");
         }
+        ret.push_str(&format!("=?UTF-8?B?{}?=", b64));
     }
 
     ret
@@ -39,7 +34,7 @@ fn send_notification_mail(config: &Config, user: &User, tweet: &Tweet) -> Result
     let text = format!("{}\n\nURL: {}", tweet.text, url);
     let mut email_builder = Email::builder()
         .from(config.notification_from_email.as_str())
-        .subject(encode_subject(subject))
+        .subject(encode_subject(subject.as_str()))
         .text(text);
     for to in &config.notification_tos {
         email_builder = email_builder.to(to.as_str());
@@ -128,7 +123,12 @@ mod tests {
 
     #[test]
     fn test_encode_subject2() {
-        assert_eq!(encode_subject("徳島ヴォルティス 公式の更新通知"), "=?UTF-8?B?5b6z5bO244O044Kp44Or44OG44Kj44K5IOWFrOW8j+OBruabtOaWsOmAmg==?=\r\n =?UTF-8?B?55+l?=");
+        assert_eq!(encode_subject("徳島ヴォルティス 公式の更新通知"), "=?UTF-8?B?5b6z5bO244O044Kp44Or44OG44Kj44K5IOWFrOW8j+OBruabtOaWsOmA?=\r\n =?UTF-8?B?muefpQ==?=");
+    }
+
+    #[test]
+    fn test_encode_subject3() {
+        assert_eq!(encode_subject("【更新通知】ヴォルティススタジアム"), "=?UTF-8?B?44CQ5pu05paw6YCa55+l44CR44O044Kp44Or44OG44Kj44K544K544K/?=\r\n =?UTF-8?B?44K444Ki44Og?=");
     }
 
     #[test]
@@ -142,7 +142,7 @@ mod tests {
         let tweet = Tweet {
             id: 0,
             user_id: 0,
-            user_name: String::from("徳島ヴォルティス公式"),
+            user_name: String::from("ヴォルティススタジアム"),
             created_at: Utc::now(),
             text: String::from("テスト"),
             retweets: 0,
