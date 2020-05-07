@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 base64 = "*"
-chrono = "*"
+chrono = { version = "*", features = ["serde"] }
 clap = "*"
 dotenv = "*"
 encoding = "*"
@@ -15,7 +15,7 @@ lettre = "*"
 lettre_email = "*"
 mime = "*"
 reqwest = { version = "*", features = ["blocking", "json"] }
-rust-sqlite = "*"
+rusqlite = { version = "*", features = ["bundled", "chrono"] }
 serde = "*"
 serde_derive = "*"
 serde_json = "*"
