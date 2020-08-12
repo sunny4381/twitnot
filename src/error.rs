@@ -4,8 +4,6 @@ use std::io::Read;
 use std::fmt;
 
 use chrono;
-use lettre;
-use lettre_email;
 use reqwest;
 use serde_json;
 use rusqlite;
@@ -21,8 +19,6 @@ pub enum Error {
     SqliteError(rusqlite::Error),
     ModelError(&'static str),
     ChronoParseError(chrono::ParseError),
-    LettreEmailError(lettre_email::error::Error),
-    LettreSmtpError(lettre::smtp::error::Error),
     UnknownCommandError,
 }
 
@@ -40,8 +36,6 @@ impl fmt::Display for Error {
             Error::SqliteError(ref err) => write!(f, "Sqlite error: {}", err),
             Error::ModelError(msg) => write!(f, "Model error: {}", msg),
             Error::ChronoParseError(ref err) => write!(f, "Chrono Parse error: {}", err),
-            Error::LettreEmailError(ref err) => write!(f, "Lettre Email error: {}", err),
-            Error::LettreSmtpError(ref err) => write!(f, "Lettre Smtp error: {}", err),
             Error::UnknownCommandError => write!(f, "Unknown Command"),
         }
     }
@@ -136,17 +130,5 @@ impl From<rusqlite::Error> for Error {
 impl From<chrono::ParseError> for Error {
     fn from(err: chrono::ParseError) -> Error {
         Error::ChronoParseError(err)
-    }
-}
-
-impl From<lettre_email::error::Error> for Error {
-    fn from(err: lettre_email::error::Error) -> Error {
-        Error::LettreEmailError(err)
-    }
-}
-
-impl From<lettre::smtp::error::Error> for Error {
-    fn from(err: lettre::smtp::error::Error) -> Error {
-        Error::LettreSmtpError(err)
     }
 }
