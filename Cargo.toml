@@ -5,7 +5,6 @@ authors = ["NAKANO Hideo <pinarello.marvel@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-base64 = "*"
 chrono = { version = "*", features = ["serde"] }
 clap = "*"
 dotenv = "*"
