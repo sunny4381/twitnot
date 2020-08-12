@@ -1,12 +1,9 @@
-use std::str;
-
-use base64;
+use std::io::Write;
+use std::process::Command;
 
 use chrono::{DateTime, Utc};
 use clap::ArgMatches;
-use lettre::smtp::authentication::IntoCredentials;
-use lettre::{SmtpClient, Transport};
-use lettre_email::Email;
+use tempfile::NamedTempFile;
 
 use crate::db::Db;
 use crate::db::models::{User, Tweet};
@@ -14,40 +11,28 @@ use crate::error::Error;
 use crate::config::Config;
 use crate::twitter::TwitterClient;
 
-fn encode_subject(subject: &str) -> String {
-    let slices = subject.as_bytes().chunks(3 * 14);
-    let mut ret = String::new();
-    for slice in slices {
-        let b64 = base64::encode(slice);
-        if ret.len() > 0 {
-            ret.push_str("\r\n ");
-        }
-        ret.push_str(&format!("=?UTF-8?B?{}?=", b64));
-    }
-
-    ret
-}
-
 fn send_notification_mail(config: &Config, user: &User, tweet: &Tweet) -> Result<(), Error> {
     let url = format!("http://twitter.com/{}/status/{}", user.screen_name, tweet.id);
-    let subject = &format!("【更新通知】{}", tweet.user_name);
+    let subject = format!("【更新通知】{}", tweet.user_name);
     let text = format!("{}\n\nURL: {}", tweet.text, url);
-    let mut email_builder = Email::builder()
-        .from(config.notification_from_email.as_str())
-        .subject(encode_subject(subject.as_str()))
-        .text(text);
+
+    let mut tmp_file = NamedTempFile::new()?;
+    tmp_file.write_all(text.as_bytes())?;
+
+    let tmp_file_path = tmp_file.path().as_os_str();
+
+    // let to_addresses: String = config.notification_tos.join(",");
     for to in &config.notification_tos {
-        email_builder = email_builder.to(to.as_str());
+        let exit_status = Command::new("gmail").
+            arg("send").
+            arg(tmp_file_path).
+            arg("--subject").arg(subject.as_str()).
+            arg("--to").arg(to.as_str()).
+            spawn()?.wait()?;
+        if !exit_status.success() {
+            return Err(Error::CommandError("gmail command execution error"));
+        }
     }
-    let email = email_builder.build()?;
-
-    let credentials = (config.gmail_username.as_str(), config.gmail_password.as_str()).into_credentials();
-    let mut mailer = SmtpClient::new_simple("smtp.gmail.com")?
-        .credentials(credentials)
-        .smtp_utf8(true)
-        .transport();
-
-    mailer.send(email.into())?;
 
     Ok(())
 }
@@ -115,21 +100,6 @@ pub fn execute_check_updates(args: &ArgMatches) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_encode_subject1() {
-        assert_eq!(encode_subject("日本語テスト"), "=?UTF-8?B?5pel5pys6Kqe44OG44K544OI?=");
-    }
-
-    #[test]
-    fn test_encode_subject2() {
-        assert_eq!(encode_subject("徳島ヴォルティス 公式の更新通知"), "=?UTF-8?B?5b6z5bO244O044Kp44Or44OG44Kj44K5IOWFrOW8j+OBruabtOaWsOmA?=\r\n =?UTF-8?B?muefpQ==?=");
-    }
-
-    #[test]
-    fn test_encode_subject3() {
-        assert_eq!(encode_subject("【更新通知】ヴォルティススタジアム"), "=?UTF-8?B?44CQ5pu05paw6YCa55+l44CR44O044Kp44Or44OG44Kj44K544K544K/?=\r\n =?UTF-8?B?44K444Ki44Og?=");
-    }
 
     #[test]
     fn test_send_notification_mail() {
