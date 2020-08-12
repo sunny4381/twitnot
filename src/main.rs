@@ -25,8 +25,6 @@ fn main() {
             (@arg consumer_key: +required "consumer key")
             (@arg consumer_secret: --secret +takes_value "consumer secret")
             (@arg database_file: --db +takes_value "database file")
-            (@arg gmail_username: --gmail_username +takes_value "gmail username")
-            (@arg gmail_password: --gmail_password +takes_value "gmail password")
         )
         (@subcommand add =>
             (about: "Adds screen name to watch updates")

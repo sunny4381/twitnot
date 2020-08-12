@@ -37,14 +37,6 @@ pub fn execute_init(args: &ArgMatches) -> Result<(), Error> {
         Some(database_file) => String::from(database_file),
         _ => Config::default_database_file()?,
     };
-    let gmail_username = match args.value_of("gmail_username") {
-        Some(gmail_username) => String::from(gmail_username),
-        _ => read_from_stdin("Gmail Username")?,
-    };
-    let gmail_password = match args.value_of("gmail_password") {
-        Some(gmail_password) => String::from(gmail_password),
-        _ => read_from_stdin("Gmail Password")?,
-    };
     let notification_from_email = read_from_stdin("From Email Address")?;
     let notification_tos = read_from_stdin("To Email Addresses(comma separated)")?;
     let v2: Vec<String> = notification_tos.split(",").map(|item| item.trim()).map(String::from).collect();
@@ -53,8 +45,6 @@ pub fn execute_init(args: &ArgMatches) -> Result<(), Error> {
         consumer_key: consumer_key,
         consumer_secret: consumer_secret,
         database_file: database_file,
-        gmail_username: gmail_username,
-        gmail_password: gmail_password,
         notification_from_email: notification_from_email,
         notification_tos: v2,
     };

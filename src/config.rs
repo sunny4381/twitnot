@@ -12,8 +12,6 @@ pub struct Config {
     pub consumer_key: String,
     pub consumer_secret: String,
     pub database_file: String,
-    pub gmail_username: String,
-    pub gmail_password: String,
     pub notification_from_email: String,
     pub notification_tos: Vec<String>,
 }
@@ -46,8 +44,6 @@ impl Config {
         let consumer_key = str_val("consumer_key")?;
         let consumer_secret = str_val("consumer_secret")?;
         let database_file = str_val("database_file")?;
-        let gmail_username = str_val("gmail_username")?;
-        let gmail_password = str_val("gmail_password")?;
         let notification_from_email = str_val("notification_from_email")?;
         let notification_tos: Vec<String> = if let Some(ary) = cfg["notification_tos"].as_array() {
             ary.into_iter().filter_map(|item| item.as_str().map(String::from)).collect()
@@ -59,8 +55,6 @@ impl Config {
             consumer_key: consumer_key,
             consumer_secret: consumer_secret,
             database_file: database_file,
-            gmail_username: gmail_username,
-            gmail_password: gmail_password,
             notification_from_email: notification_from_email,
             notification_tos: notification_tos,
         });
@@ -71,8 +65,6 @@ impl Config {
             "consumer_key": self.consumer_key,
             "consumer_secret": self.consumer_secret,
             "database_file": self.database_file,
-            "gmail_username": self.gmail_username,
-            "gmail_password": self.gmail_password,
             "notification_from_email": self.notification_from_email,
             "notification_tos": self.notification_tos,
         });
