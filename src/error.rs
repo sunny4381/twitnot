@@ -20,7 +20,7 @@ pub enum Error {
     ModelError(&'static str),
     ChronoParseError(chrono::ParseError),
     UnknownCommandError,
-    CommandError(&'static str),
+    CommandError(String),
 }
 
 impl fmt::Display for Error {
@@ -38,7 +38,7 @@ impl fmt::Display for Error {
             Error::ModelError(msg) => write!(f, "Model error: {}", msg),
             Error::ChronoParseError(ref err) => write!(f, "Chrono Parse error: {}", err),
             Error::UnknownCommandError => write!(f, "Unknown Command"),
-            Error::CommandError(msg) => write!(f, "Command error: {}", msg),
+            Error::CommandError(ref msg) => write!(f, "Command error: {}", msg),
         }
     }
 }
