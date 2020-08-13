@@ -33,6 +33,10 @@ pub fn execute_init(args: &ArgMatches) -> Result<(), Error> {
         Some(consumer_secret) => String::from(consumer_secret),
         _ => read_from_stdin("Consumer Secret")?,
     };
+    let gmail_command = match args.value_of("gmail_command") {
+        Some(gmail_command) => String::from(gmail_command),
+        _ => read_from_stdin("Gmail Command Path")?,
+    };
     let database_file = match args.value_of("database_file") {
         Some(database_file) => String::from(database_file),
         _ => Config::default_database_file()?,
@@ -44,6 +48,7 @@ pub fn execute_init(args: &ArgMatches) -> Result<(), Error> {
     let config = Config {
         consumer_key: consumer_key,
         consumer_secret: consumer_secret,
+        gmail_command: gmail_command,
         database_file: database_file,
         notification_from_email: notification_from_email,
         notification_tos: v2,

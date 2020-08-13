@@ -22,7 +22,7 @@ fn send_notification_mail(config: &Config, user: &User, tweet: &Tweet) -> Result
     let tmp_file_path = tmp_file.path().as_os_str();
 
     for to in &config.notification_tos {
-        let command_output = Command::new("gmail").
+        let command_output = Command::new(config.gmail_command.as_str()).
             arg("send").
             arg(tmp_file_path).
             arg("--subject").arg(subject.as_str()).

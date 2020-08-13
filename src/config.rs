@@ -11,6 +11,7 @@ use crate::error::Error;
 pub struct Config {
     pub consumer_key: String,
     pub consumer_secret: String,
+    pub gmail_command: String,
     pub database_file: String,
     pub notification_from_email: String,
     pub notification_tos: Vec<String>,
@@ -43,6 +44,7 @@ impl Config {
         let str_val = |key: &'static str| cfg[key].as_str().map(String::from).ok_or(Error::ConfigError(key));
         let consumer_key = str_val("consumer_key")?;
         let consumer_secret = str_val("consumer_secret")?;
+        let gmail_command = str_val("gmail_command")?;
         let database_file = str_val("database_file")?;
         let notification_from_email = str_val("notification_from_email")?;
         let notification_tos: Vec<String> = if let Some(ary) = cfg["notification_tos"].as_array() {
@@ -54,6 +56,7 @@ impl Config {
         return Ok(Config {
             consumer_key: consumer_key,
             consumer_secret: consumer_secret,
+            gmail_command: gmail_command,
             database_file: database_file,
             notification_from_email: notification_from_email,
             notification_tos: notification_tos,
@@ -64,6 +67,7 @@ impl Config {
         let cfg = json!({
             "consumer_key": self.consumer_key,
             "consumer_secret": self.consumer_secret,
+            "gmail_command": self.gmail_command,
             "database_file": self.database_file,
             "notification_from_email": self.notification_from_email,
             "notification_tos": self.notification_tos,
