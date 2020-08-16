@@ -21,19 +21,20 @@ fn send_notification_mail(config: &Config, user: &User, tweet: &Tweet) -> Result
 
     let tmp_file_path = tmp_file.path().as_os_str();
 
+    let mut command = Command::new(&config.gmail_command);
+    command.
+        arg("send").
+        arg(tmp_file_path).
+        arg("--subject").arg(subject.as_str());
     for to in &config.notification_tos {
-        let command_output = Command::new(config.gmail_command.as_str()).
-            arg("send").
-            arg(tmp_file_path).
-            arg("--subject").arg(subject.as_str()).
-            arg("--to").arg(to.as_str()).
-            output()?;
-        if !command_output.status.success() {
-            let stdout = String::from_utf8_lossy(&command_output.stdout);
-            let stderr = String::from_utf8_lossy(&command_output.stderr);
-            let error_message = format!("gmail command execution error\n{}\n{}", stdout, stderr);
-            return Err(Error::CommandError(error_message));
-        }
+        command.arg("--to").arg(to.as_str());
+    }
+    let command_output = command.output()?;
+    if !command_output.status.success() {
+        let stdout = String::from_utf8_lossy(&command_output.stdout);
+        let stderr = String::from_utf8_lossy(&command_output.stderr);
+        let error_message = format!("gmail command execution error\n{}\n{}", stdout, stderr);
+        return Err(Error::CommandError(error_message));
     }
 
     Ok(())
