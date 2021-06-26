@@ -25,6 +25,7 @@ fn send_notification_mail(config: &Config, user: &User, tweet: &Tweet) -> Result
     command.
         arg("send").
         arg(tmp_file_path).
+        arg("--list-id").arg("twitter-notification.localhost").
         arg("--subject").arg(subject.as_str());
     for to in &config.notification_tos {
         command.arg("--to").arg(to.as_str());
